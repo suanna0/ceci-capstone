@@ -238,7 +238,7 @@ function drawPosePoints(){
         
         // Draw lines connecting the joints of the body
         noFill();
-        stroke("darkblue");
+        stroke("white");
         strokeWeight(2.0);
         for (let h = 0; h < nPoses; h++) {
           let joints = poseLandmarks.landmarks[h];

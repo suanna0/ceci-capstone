@@ -1,0 +1,25 @@
+{
+  "name": "ceci-capstone",
+  "version": "1.0.0",
+  "description": "GUI for Ceci Sun's Senior Capstone Performance",
+  "main": "osc-bridge.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suanna0/ceci-capstone.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/suanna0/ceci-capstone/issues"
+  },
+  "homepage": "https://github.com/suanna0/ceci-capstone#readme",
+  "dependencies": {
+    "osc": "^2.4.5",
+    "ws": "^8.19.0"
+  }
+}

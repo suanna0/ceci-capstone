@@ -22,9 +22,9 @@ let myCapture;
 // You'll get best performance with just one or two sets of landmarks.
 // (Note, trackers set to false on startup can't be enabled later.)
 let trackingConfig = {
-  doAcquireHandLandmarks: true,
+  doAcquireHandLandmarks: false,
   doAcquirePoseLandmarks: true,
-  doAcquireFaceLandmarks: true,
+  doAcquireFaceLandmarks: false,
   doAcquireFaceMetrics: true,
   poseModelLiteOrFull: "full", /* "lite" (3MB) or "full" (6MB) */
   cpuOrGpuString: "GPU", /* "GPU" or "CPU" */
@@ -36,6 +36,12 @@ let checkboxHand;
 let checkboxFace;
 let checkboxPose;
 
+//----------------------------------------------------
+// OSC Bridge Configuration (connects to osc-bridge.js which forwards to TouchDesigner)
+let ws;
+let wsConnected = false;
+const WS_URL = "ws://localhost:9980"; // OSC bridge WebSocket port
+
 //------------------------------------------
 async function preload() {
 	preloadTracker();
@@ -43,9 +49,11 @@ async function preload() {
 
 //------------------------------------------
 function setup() {
-  createCanvas(640, 480);
+
+	// 640 * 480 ratio is 4:3
+  createCanvas(windowHeight * 4/3, windowHeight);
 	myCapture = createCapture(VIDEO);
-	myCapture.size(160,120); 
+	myCapture.size(windowHeight * 4/3,windowHeight); 
   myCapture.hide();
 	initiateTracking(); 
 	
@@ -55,6 +63,30 @@ function setup() {
   checkboxFace.position(0, 40);
 	checkboxPose = createCheckbox('pose', trackingConfig.doAcquirePoseLandmarks);
   checkboxPose.position(0, 60);
+
+	// Initialize connection to OSC bridge
+	setupWebSocket();
+}
+
+//------------------------------------------
+function setupWebSocket() {
+	ws = new WebSocket(WS_URL);
+
+	ws.onopen = function() {
+		console.log("WebSocket connected to " + WS_URL);
+		wsConnected = true;
+	};
+
+	ws.onerror = function(err) {
+		console.log("WebSocket error");
+		wsConnected = false;
+	};
+
+	ws.onclose = function() {
+		console.log("WebSocket closed, reconnecting in 2s...");
+		wsConnected = false;
+		setTimeout(setupWebSocket, 2000); // Auto-reconnect
+	};
 }
 
 
@@ -78,8 +110,11 @@ function draw() {
 	// Example "applications"; for code, see below:
 	drawClownNose();
 	drawThumbPlum();
-	drawJawOpenness(); 
+	drawJawOpenness();
 	drawDiagnosticInfo();
+
+	// Send pose landmarks via OSC to TouchDesigner
+	sendPoseData();
 }
 
 //------------------------------------------
@@ -166,18 +201,50 @@ function drawVideoBackground() {
   push();
   translate(width, 0);
   scale(-1, 1);
-  tint(255, 255, 255, 72);
+  tint(255, 255, 255, 255);
   image(myCapture, 0, 0, width, height);
   tint(255);
   pop();
 }
 
 //------------------------------------------
-let frameRateAvg = 60.0; 
+let frameRateAvg = 60.0;
 function drawDiagnosticInfo() {
   noStroke();
   fill("black");
-  textSize(12); 
+  textSize(12);
 	frameRateAvg = 0.98*frameRateAvg + 0.02*frameRate();
   text("FPS: " + nf(frameRateAvg,1,2), 40, 30);
+
+	// Show OSC bridge connection status
+	if (wsConnected) {
+		fill(0, 200, 0);
+		text("OSC: Connected", 40, 45);
+	} else {
+		fill(200, 0, 0);
+		text("OSC: Disconnected", 40, 45);
+	}
+}
+
+//------------------------------------------
+// Send 33 pose landmarks via OSC bridge to TouchDesigner
+// Format: JSON to bridge, which forwards as OSC /pose/0 through /pose/32
+function sendPoseData() {
+	if (!wsConnected || !ws || ws.readyState !== WebSocket.OPEN) return;
+	if (!poseLandmarks || !poseLandmarks.landmarks || poseLandmarks.landmarks.length === 0) return;
+
+	const pose = poseLandmarks.landmarks[0]; // First detected pose
+
+	// Build array of 33 points, each with [x, y, z]
+	let points = [];
+	for (let i = 0; i < 33; i++) {
+		if (pose[i]) {
+			points.push([pose[i].x, pose[i].y, pose[i].z]);
+		} else {
+			points.push([0, 0, 0]);
+		}
+	}
+
+	// Send as JSON
+	ws.send(JSON.stringify({ pose: points }));
 }
