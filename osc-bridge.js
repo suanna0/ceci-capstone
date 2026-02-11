@@ -35,19 +35,14 @@ wss.on('connection', (ws) => {
     try {
       const msg = JSON.parse(data);
 
-      if (msg.pose) {
-        // Send each of the 33 pose points as separate OSC messages
-        for (let i = 0; i < msg.pose.length; i++) {
-          const point = msg.pose[i];
-          udpPort.send({
-            address: `/pose/${i}`,
-            args: [
-              { type: 'f', value: point[0] },  // x
-              { type: 'f', value: point[1] },  // y
-              { type: 'f', value: point[2] }   // z
-            ]
-          });
-        }
+      if (msg.pose !== undefined && typeof msg.pose === 'number') {
+        // Send normalized distance as single OSC value (0-1)
+        udpPort.send({
+          address: '/pose',
+          args: [
+            { type: 'f', value: msg.pose }
+          ]
+        });
       }
     } catch (err) {
       console.error('Error parsing message:', err);

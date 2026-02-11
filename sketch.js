@@ -35,6 +35,14 @@ let trackingConfig = {
 let checkboxHand;
 let checkboxFace;
 let checkboxPose;
+let checkboxVideoFile;
+let sliderMaxDistance;
+
+//----------------------------------------------------
+// Video input sources
+let myWebcam;
+let myVideoFile;
+let useVideoFile = false;
 
 //----------------------------------------------------
 // OSC Bridge Configuration (connects to osc-bridge.js which forwards to TouchDesigner)
@@ -52,20 +60,71 @@ function setup() {
 
 	// 640 * 480 ratio is 4:3
   createCanvas(windowHeight * 4/3, windowHeight);
-	myCapture = createCapture(VIDEO);
-	myCapture.size(windowHeight * 4/3,windowHeight); 
-  myCapture.hide();
-	initiateTracking(); 
-	
+
+	// Create webcam capture
+	myWebcam = createCapture(VIDEO);
+	myWebcam.size(windowHeight * 4/3, windowHeight);
+	myWebcam.hide();
+
+	// Create video file element (16:9 aspect ratio)
+	myVideoFile = createVideo('assets/evelyn_0.mp4');
+	myVideoFile.size(windowHeight * 16/9, windowHeight);
+	myVideoFile.hide();
+	myVideoFile.loop();
+	myVideoFile.volume(0);
+
+	// Start with webcam as default
+	myCapture = myWebcam;
+	initiateTracking();
+
 	checkboxHand = createCheckbox('hand', trackingConfig.doAcquireHandLandmarks);
-  checkboxHand.position(0, 20);
+	checkboxHand.position(0, 20);
 	checkboxFace = createCheckbox('face', trackingConfig.doAcquireFaceLandmarks);
-  checkboxFace.position(0, 40);
+	checkboxFace.position(0, 40);
 	checkboxPose = createCheckbox('pose', trackingConfig.doAcquirePoseLandmarks);
-  checkboxPose.position(0, 60);
+	checkboxPose.position(0, 60);
+	checkboxVideoFile = createCheckbox('use video file', false);
+	checkboxVideoFile.position(0, 80);
+	checkboxVideoFile.changed(onVideoSourceChange);
+
+	// Slider for maxDistance (0.1 to 1.0, default 0.5)
+	sliderMaxDistance = createSlider(0.1, 1.0, 0.5, 0.01);
+	sliderMaxDistance.position(0, 105);
+	sliderMaxDistance.style('width', '100px');
 
 	// Initialize connection to OSC bridge
 	setupWebSocket();
+}
+
+//------------------------------------------
+function onVideoSourceChange() {
+	useVideoFile = checkboxVideoFile.checked();
+	if (useVideoFile) {
+		// Switch to video file with 16:9 aspect ratio
+		resizeCanvas(windowHeight * 16/9, windowHeight);
+		myCapture = myVideoFile;
+		myVideoFile.play();
+	} else {
+		// Switch to webcam with 4:3 aspect ratio
+		resizeCanvas(windowHeight * 4/3, windowHeight);
+		myCapture = myWebcam;
+		myVideoFile.pause();
+	}
+}
+
+//------------------------------------------
+let videoPaused = false;
+function keyPressed() {
+	if (key === ' ' && useVideoFile) {
+		if (videoPaused) {
+			myVideoFile.play();
+			videoPaused = false;
+		} else {
+			myVideoFile.pause();
+			videoPaused = true;
+		}
+		return false; // Prevent default space behavior
+	}
 }
 
 //------------------------------------------
@@ -103,7 +162,7 @@ function draw() {
 	
 	// These functions are defined in trackerstuff.js
   drawHandPoints();
-  drawPosePoints(); 
+//   drawPosePoints(); 
   drawFacePoints();
   drawFaceMetrics();
 	
@@ -111,6 +170,7 @@ function draw() {
 	drawClownNose();
 	drawThumbPlum();
 	drawJawOpenness();
+	drawChosenJoints();
 	drawDiagnosticInfo();
 
 	// Send pose landmarks via OSC to TouchDesigner
@@ -196,6 +256,35 @@ function drawJawOpenness(){
 	}
 }
 
+
+function drawChosenJoints() {
+	var jointA = 11;
+	var jointB = 15;
+	if (trackingConfig.doAcquirePoseLandmarks) {
+		if (poseLandmarks && poseLandmarks.landmarks) {
+			const nPoses = poseLandmarks.landmarks.length;
+			if (nPoses > 0) {
+				let ptA = poseLandmarks.landmarks[0][jointA];
+				let ptB = poseLandmarks.landmarks[0][jointB];
+				let ax = map(ptA.x, 0, 1, width, 0);
+				let ay = map(ptA.y, 0, 1, 0, height);
+				let bx = map(ptB.x, 0, 1, width, 0);
+				let by = map(ptB.y, 0, 1, 0, height);
+				fill(255);
+				noStroke();
+				circle(ax, ay, 8);
+				circle(bx, by, 8);
+				stroke(255);
+				strokeWeight(1);
+				line(ax, ay, bx, by);
+				noStroke();
+				text(round(dist(ax, ay, bx, by)), ax + 10, ay + 10);
+
+			}
+		}
+	}
+}
+
 //------------------------------------------
 function drawVideoBackground() {
   push();
@@ -224,27 +313,34 @@ function drawDiagnosticInfo() {
 		fill(200, 0, 0);
 		text("OSC: Disconnected", 40, 45);
 	}
+
+	// Show maxDistance slider value
+	fill("black");
+	text("maxDist/sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 140);
+}
+
+function getPoseDistance(a, b) {
+	if (!poseLandmarks || !poseLandmarks.landmarks || poseLandmarks.landmarks.length === 0) return null;
+	const pose = poseLandmarks.landmarks[0];
+	if (!pose[a] || !pose[b]) return null;
+
+	let dx = pose[a].x - pose[b].x;
+	let dy = pose[a].y - pose[b].y;
+	let dz = pose[a].z - pose[b].z;
+	return sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 //------------------------------------------
-// Send 33 pose landmarks via OSC bridge to TouchDesigner
-// Format: JSON to bridge, which forwards as OSC /pose/0 through /pose/32
+// Send normalized distance (0-1) via OSC bridge to TouchDesigner
 function sendPoseData() {
 	if (!wsConnected || !ws || ws.readyState !== WebSocket.OPEN) return;
-	if (!poseLandmarks || !poseLandmarks.landmarks || poseLandmarks.landmarks.length === 0) return;
 
-	const pose = poseLandmarks.landmarks[0]; // First detected pose
+	const distance = getPoseDistance(11, 15);
+	if (distance === null) return;
 
-	// Build array of 33 points, each with [x, y, z]
-	let points = [];
-	for (let i = 0; i < 33; i++) {
-		if (pose[i]) {
-			points.push([pose[i].x, pose[i].y, pose[i].z]);
-		} else {
-			points.push([0, 0, 0]);
-		}
-	}
+	// Normalize to 0-1 range using slider value
+	let maxDistance = sliderMaxDistance.value();
+	let normalized = constrain(distance / maxDistance, 0, 1);
 
-	// Send as JSON
-	ws.send(JSON.stringify({ pose: points }));
+	ws.send(JSON.stringify({ pose: normalized }));
 }
