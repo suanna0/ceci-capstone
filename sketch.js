@@ -67,8 +67,8 @@ function setup() {
 	myWebcam.hide();
 
 	// Create video file element (16:9 aspect ratio)
-	myVideoFile = createVideo('assets/evelyn_0.mp4');
-	myVideoFile.size(windowHeight * 16/9, windowHeight);
+	myVideoFile = createVideo('assets/viviana.mov');
+	myVideoFile.size(windowHeight * 4/3, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
 	myVideoFile.volume(0);
@@ -100,8 +100,7 @@ function setup() {
 function onVideoSourceChange() {
 	useVideoFile = checkboxVideoFile.checked();
 	if (useVideoFile) {
-		// Switch to video file with 16:9 aspect ratio
-		resizeCanvas(windowHeight * 16/9, windowHeight);
+		resizeCanvas(windowHeight * 4/3, windowHeight);
 		myCapture = myVideoFile;
 		myVideoFile.play();
 	} else {
@@ -114,6 +113,7 @@ function onVideoSourceChange() {
 
 //------------------------------------------
 let videoPaused = false;
+let soundOn = false;
 function keyPressed() {
 	if (key === ' ' && useVideoFile) {
 		if (videoPaused) {
@@ -124,6 +124,12 @@ function keyPressed() {
 			videoPaused = true;
 		}
 		return false; // Prevent default space behavior
+	}
+	if (key === 's' || key === 'S') {
+		soundOn = !soundOn;
+		myVideoFile.volume(soundOn ? 1 : 0);
+		console.log("Sound: " + (soundOn ? "ON" : "OFF"));
+		return false;
 	}
 }
 
