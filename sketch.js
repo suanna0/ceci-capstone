@@ -37,6 +37,8 @@ let checkboxFace;
 let checkboxPose;
 let checkboxVideoFile;
 let sliderMaxDistance;
+let sliderSmoothing;
+let smoothedValue = 0; // For exponential smoothing of OSC signal
 
 //----------------------------------------------------
 // Video input sources
@@ -67,7 +69,7 @@ function setup() {
 	myWebcam.hide();
 
 	// Create video file element (16:9 aspect ratio)
-	myVideoFile = createVideo('assets/viviana.mov');
+	myVideoFile = createVideo('assets/viviana_1.mov');
 	myVideoFile.size(windowHeight * 4/3, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
@@ -91,6 +93,11 @@ function setup() {
 	sliderMaxDistance = createSlider(0.1, 1.0, 0.5, 0.01);
 	sliderMaxDistance.position(0, 105);
 	sliderMaxDistance.style('width', '100px');
+
+	// Slider for smoothing (0 = no smoothing, 0.99 = heavy smoothing)
+	sliderSmoothing = createSlider(0, 0.99, 0.5, 0.01);
+	sliderSmoothing.position(0, 145);
+	sliderSmoothing.style('width', '100px');
 
 	// Initialize connection to OSC bridge
 	setupWebSocket();
@@ -264,8 +271,8 @@ function drawJawOpenness(){
 
 
 function drawChosenJoints() {
-	var jointA = 11;
-	var jointB = 15;
+	var jointA = 12;
+	var jointB = 16;
 	if (trackingConfig.doAcquirePoseLandmarks) {
 		if (poseLandmarks && poseLandmarks.landmarks) {
 			const nPoses = poseLandmarks.landmarks.length;
@@ -323,6 +330,7 @@ function drawDiagnosticInfo() {
 	// Show maxDistance slider value
 	fill("black");
 	text("maxDist/sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 140);
+	text("smoothing: " + nf(sliderSmoothing.value(), 1, 2), 20, 180);
 }
 
 function getPoseDistance(a, b) {
@@ -341,12 +349,17 @@ function getPoseDistance(a, b) {
 function sendPoseData() {
 	if (!wsConnected || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-	const distance = getPoseDistance(11, 15);
+	const distance = getPoseDistance(12, 16);
 	if (distance === null) return;
 
 	// Normalize to 0-1 range using slider value
 	let maxDistance = sliderMaxDistance.value();
 	let normalized = constrain(distance / maxDistance, 0, 1);
 
-	ws.send(JSON.stringify({ pose: normalized }));
+	// Apply exponential smoothing (low-pass filter)
+	// Higher smoothing value = smoother but more latency
+	let smoothing = sliderSmoothing.value();
+	smoothedValue = smoothing * smoothedValue + (1 - smoothing) * normalized;
+
+	ws.send(JSON.stringify({ pose: smoothedValue }));
 }
