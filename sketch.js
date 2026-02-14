@@ -68,8 +68,7 @@ function setup() {
 	myWebcam.size(windowHeight * 4/3, windowHeight);
 	myWebcam.hide();
 
-	// Create video file element (16:9 aspect ratio)
-	myVideoFile = createVideo('assets/viviana_1.mov');
+	myVideoFile = createVideo('assets/evelyn_0.mp4');
 	myVideoFile.size(windowHeight * 4/3, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
@@ -327,9 +326,8 @@ function drawDiagnosticInfo() {
 		text("OSC: Disconnected", 40, 45);
 	}
 
-	// Show maxDistance slider value
 	fill("black");
-	text("maxDist/sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 140);
+	text("sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 140);
 	text("smoothing: " + nf(sliderSmoothing.value(), 1, 2), 20, 180);
 }
 
