@@ -68,7 +68,7 @@ function setup() {
 	myWebcam.size(windowHeight * 4/3, windowHeight);
 	myWebcam.hide();
 
-	myVideoFile = createVideo('assets/evelyn_0.mp4');
+	myVideoFile = createVideo('assets/viviana_1.mov');
 	myVideoFile.size(windowHeight * 4/3, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
@@ -100,6 +100,8 @@ function setup() {
 
 	// Initialize connection to OSC bridge
 	setupWebSocket();
+
+	initParticles(20, 15, 8);
 }
 
 //------------------------------------------
@@ -161,8 +163,6 @@ function setupWebSocket() {
 }
 
 
-
-
 //------------------------------------------
 function draw() {
   background("white");
@@ -173,16 +173,21 @@ function draw() {
 	trackingConfig.doAcquirePoseLandmarks = checkboxPose.checked();
 	
 	// These functions are defined in trackerstuff.js
-  drawHandPoints();
+//   drawHandPoints();
 //   drawPosePoints(); 
-  drawFacePoints();
-  drawFaceMetrics();
+//   drawFacePoints();
+//   drawFaceMetrics();
 	
 	// Example "applications"; for code, see below:
 	drawClownNose();
 	drawThumbPlum();
 	drawJawOpenness();
-	drawChosenJoints();
+	// drawChosenJoints();
+	// drawPoseCircle(1, 10, 255, 0, 0, 180);
+	drawQuadrangle();
+	updateParticles();
+	drawParticles(0, 0, 0, 255);
+
 	drawDiagnosticInfo();
 
 	// Send pose landmarks via OSC to TouchDesigner
@@ -302,7 +307,7 @@ function drawVideoBackground() {
   push();
   translate(width, 0);
   scale(-1, 1);
-  tint(255, 255, 255, 255);
+  tint(255, 255, 255, 100);
   image(myCapture, 0, 0, width, height);
   tint(255);
   pop();
