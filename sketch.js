@@ -40,6 +40,9 @@ let sliderMaxDistance;
 let sliderSmoothing;
 let smoothedValue = 0; // For exponential smoothing of OSC signal
 
+let particleCols = 30;
+let particleRows = 30;
+
 //----------------------------------------------------
 // Video input sources
 let myWebcam;
@@ -138,6 +141,15 @@ function keyPressed() {
 		myVideoFile.volume(soundOn ? 1 : 0);
 		console.log("Sound: " + (soundOn ? "ON" : "OFF"));
 		return false;
+	}
+	if (keyCode === UP_ARROW) {
+		particleCols+=10;
+		particleRows+=10;
+		initParticles(particleCols, particleRows, 8);
+	} else if (keyCode === DOWN_ARROW) {
+		particleCols-=10;
+		particleRows-=10;
+		initParticles(particleCols, particleRows, 8);
 	}
 	// Handle backspace for particle word
 	if (keyCode === BACKSPACE) {
@@ -318,8 +330,8 @@ function drawVideoBackground() {
   push();
   let thumbW = 160;
   let thumbH = 120;
-  let thumbX = width - thumbW - 10;
-  let thumbY = 10;
+  let thumbX = 10;
+  let thumbY = height/2 - thumbH/2 - 10;
   // Mirror the thumbnail
   translate(thumbX + thumbW, thumbY);
   scale(-1, 1);
