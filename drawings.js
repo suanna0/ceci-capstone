@@ -44,20 +44,40 @@ function drawQuadrangle() {
 // ---- Physics Circle Grid ----
 let particles = [];
 let particlesInitialized = false;
+let particleWord = "i";  // Default word
+
+// Call this from keyTyped() in sketch.js
+function handleParticleInput(k) {
+  if (k === 'Backspace' || k === 'Delete') {
+    particleWord = particleWord.slice(0, -1);
+  } else if (k.length === 1) {
+    particleWord += k;
+  }
+}
+
+// Clear the word
+function clearParticleWord() {
+  particleWord = "";
+}
+
+// Set the word directly
+function setParticleWord(word) {
+  particleWord = word;
+}
 
 // Call once in setup() to create the grid
 function initParticles(cols = 20, rows = 15, size = 8) {
   particles = [];
   let spacingX = width / (cols + 1);
-  let offset = spacingX/2;
+  let offset = - spacingX/ 2;
   let spacingY = height / (rows + 1);
 
   for (let i = 1; i <= cols; i++) {
     for (let j = 1; j <= rows; j++) {
-      if (i % 2 === 0) {
+      if (j % 2 === 0) {
         offset = 0;
       } else {
-        offset = spacingX/2;
+        offset = spacingX / 2;
       }
       particles.push({
         x: i * spacingX + offset,
@@ -100,24 +120,24 @@ function updateParticles() {
     }
 
     // Slowly return home
-    let homeForce = 0.0008;
+    let homeForce = 0.0015;
     p.vx += (p.homeX - p.x) * homeForce;
     p.vy += (p.homeY - p.y) * homeForce;
 
     // Apply velocity with damping
     p.x += p.vx;
     p.y += p.vy;
-    p.vx *= 0.2;
-    p.vy *= 0.2;
+    p.vx *= 0.8;
+    p.vy *= 0.8;
   }
 }
 
 function drawParticles(r = 100, g = 150, b = 255, a = 200) {
   noStroke();
   fill(r, g, b, a);
+  let word = particleWord || "a";
   for (let p of particles) {
-    text('a', p.x, p.y);
-    // circle(p.x, p.y, p.size);
+    text(word, p.x, p.y);
   }
 }
 

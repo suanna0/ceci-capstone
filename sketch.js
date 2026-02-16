@@ -101,7 +101,7 @@ function setup() {
 	// Initialize connection to OSC bridge
 	setupWebSocket();
 
-	initParticles(20, 15, 8);
+	initParticles(30, 30, 8);
 }
 
 //------------------------------------------
@@ -139,6 +139,17 @@ function keyPressed() {
 		console.log("Sound: " + (soundOn ? "ON" : "OFF"));
 		return false;
 	}
+	// Handle backspace for particle word
+	if (keyCode === BACKSPACE) {
+		handleParticleInput('Backspace');
+		return false;
+	}
+}
+
+//------------------------------------------
+function keyTyped() {
+	handleParticleInput(key);
+	return false;
 }
 
 //------------------------------------------
@@ -184,7 +195,7 @@ function draw() {
 	drawJawOpenness();
 	// drawChosenJoints();
 	// drawPoseCircle(1, 10, 255, 0, 0, 180);
-	drawQuadrangle();
+	// drawQuadrangle();
 	updateParticles();
 	drawParticles(0, 0, 0, 255);
 
@@ -305,11 +316,15 @@ function drawChosenJoints() {
 //------------------------------------------
 function drawVideoBackground() {
   push();
-  translate(width, 0);
+  let thumbW = 160;
+  let thumbH = 120;
+  let thumbX = width - thumbW - 10;
+  let thumbY = 10;
+  // Mirror the thumbnail
+  translate(thumbX + thumbW, thumbY);
   scale(-1, 1);
-  tint(255, 255, 255, 100);
-  image(myCapture, 0, 0, width, height);
   tint(255);
+  image(myCapture, 0, 0, thumbW, thumbH);
   pop();
 }
 
