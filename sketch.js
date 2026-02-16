@@ -38,6 +38,7 @@ let checkboxFace;
 let checkboxPose;
 let checkboxVideoFile;
 let checkboxFullVideo;
+let checkboxParticles;
 let sliderMaxDistance;
 let sliderSmoothing;
 let smoothedValue = 0; // For exponential smoothing of OSC signal
@@ -94,15 +95,17 @@ function setup() {
 	checkboxVideoFile.changed(onVideoSourceChange);
 	checkboxFullVideo = createCheckbox('full video', false);
 	checkboxFullVideo.position(0, 100);
+	checkboxParticles = createCheckbox('particles', true);
+	checkboxParticles.position(0, 120);
 
 	// Slider for maxDistance (0.1 to 1.0, default 0.5)
 	sliderMaxDistance = createSlider(0.1, 1.0, 0.5, 0.01);
-	sliderMaxDistance.position(0, 125);
+	sliderMaxDistance.position(0, 145);
 	sliderMaxDistance.style('width', '100px');
 
 	// Slider for smoothing (0 = no smoothing, 0.99 = heavy smoothing)
 	sliderSmoothing = createSlider(0, 0.99, 0.5, 0.01);
-	sliderSmoothing.position(0, 165);
+	sliderSmoothing.position(0, 185);
 	sliderSmoothing.style('width', '100px');
 
 	// Initialize connection to OSC bridge
@@ -214,8 +217,10 @@ function draw() {
 	// drawChosenJoints();
 	// drawPoseCircle(1, 10, 255, 0, 0, 180);
 	// drawQuadrangle();
-	updateParticles();
-	drawParticles(0, 0, 0, 255);
+	if (checkboxParticles.checked()) {
+		updateParticles();
+		drawParticles(0, 0, 0, 255);
+	}
 
 	drawDiagnosticInfo();
 
@@ -372,8 +377,8 @@ function drawDiagnosticInfo() {
 	}
 
 	fill("black");
-	text("sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 160);
-	text("smoothing: " + nf(sliderSmoothing.value(), 1, 2), 20, 200);
+	text("sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 180);
+	text("smoothing: " + nf(sliderSmoothing.value(), 1, 2), 20, 220);
 }
 
 function getPoseDistance(a, b) {
