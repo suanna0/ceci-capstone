@@ -16,6 +16,7 @@ let handLandmarks;
 let poseLandmarks;
 let faceLandmarks;
 let myCapture;
+let frameRateAvg = 30.0;
 
 //----------------------------------------------------
 // For landmarks you want, set to true; set false the ones you don't.
@@ -36,6 +37,7 @@ let checkboxHand;
 let checkboxFace;
 let checkboxPose;
 let checkboxVideoFile;
+let checkboxFullVideo;
 let sliderMaxDistance;
 let sliderSmoothing;
 let smoothedValue = 0; // For exponential smoothing of OSC signal
@@ -90,21 +92,24 @@ function setup() {
 	checkboxVideoFile = createCheckbox('use video file', false);
 	checkboxVideoFile.position(0, 80);
 	checkboxVideoFile.changed(onVideoSourceChange);
+	checkboxFullVideo = createCheckbox('full video', false);
+	checkboxFullVideo.position(0, 100);
 
 	// Slider for maxDistance (0.1 to 1.0, default 0.5)
 	sliderMaxDistance = createSlider(0.1, 1.0, 0.5, 0.01);
-	sliderMaxDistance.position(0, 105);
+	sliderMaxDistance.position(0, 125);
 	sliderMaxDistance.style('width', '100px');
 
 	// Slider for smoothing (0 = no smoothing, 0.99 = heavy smoothing)
 	sliderSmoothing = createSlider(0, 0.99, 0.5, 0.01);
-	sliderSmoothing.position(0, 145);
+	sliderSmoothing.position(0, 165);
 	sliderSmoothing.style('width', '100px');
 
 	// Initialize connection to OSC bridge
 	setupWebSocket();
 
 	initParticles(30, 30, 8);
+	frameRate(frameRateAvg);
 }
 
 //------------------------------------------
@@ -189,6 +194,7 @@ function setupWebSocket() {
 //------------------------------------------
 function draw() {
   background("white");
+// background(255, 255, 255, 4);
   drawVideoBackground();
 	
 	trackingConfig.doAcquireHandLandmarks = checkboxHand.checked();
@@ -328,20 +334,27 @@ function drawChosenJoints() {
 //------------------------------------------
 function drawVideoBackground() {
   push();
-  let thumbW = 160;
-  let thumbH = 120;
-  let thumbX = 10;
-  let thumbY = height/2 - thumbH/2 - 10;
-  // Mirror the thumbnail
-  translate(thumbX + thumbW, thumbY);
-  scale(-1, 1);
-  tint(255);
-  image(myCapture, 0, 0, thumbW, thumbH);
+  if (checkboxFullVideo.checked()) {
+    // Full-scale video background at 50% opacity
+    translate(width, 0);
+    scale(-1, 1);
+    tint(255, 127);
+    image(myCapture, 0, 0, width, height);
+  } else {
+    // Small thumbnail
+    let thumbW = 160;
+    let thumbH = 120;
+    let thumbX = 10;
+    let thumbY = height/2 - thumbH/2 - 10;
+    translate(thumbX + thumbW, thumbY);
+    scale(-1, 1);
+    tint(255);
+    image(myCapture, 0, 0, thumbW, thumbH);
+  }
   pop();
 }
 
 //------------------------------------------
-let frameRateAvg = 60.0;
 function drawDiagnosticInfo() {
   noStroke();
   fill("black");
@@ -359,8 +372,8 @@ function drawDiagnosticInfo() {
 	}
 
 	fill("black");
-	text("sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 140);
-	text("smoothing: " + nf(sliderSmoothing.value(), 1, 2), 20, 180);
+	text("sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 160);
+	text("smoothing: " + nf(sliderSmoothing.value(), 1, 2), 20, 200);
 }
 
 function getPoseDistance(a, b) {

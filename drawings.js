@@ -135,7 +135,8 @@ function updateParticles() {
 function drawParticles(r = 100, g = 150, b = 255, a = 200) {
   noStroke();
   fill(r, g, b, a);
-  let word = particleWord || "a";
+  let word = particleWord || "_";
+  textSize(9);
   for (let p of particles) {
     text(word, p.x, p.y);
   }
