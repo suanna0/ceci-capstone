@@ -134,17 +134,17 @@ function onVideoSourceChange() {
 let videoPaused = false;
 let soundOn = false;
 function keyPressed() {
-	if (key === ' ' && useVideoFile) {
-		if (videoPaused) {
-			myVideoFile.play();
-			videoPaused = false;
-		} else {
-			myVideoFile.pause();
-			videoPaused = true;
-		}
-		return false; // Prevent default space behavior
-	}
-	if (key === 's' || key === 'S') {
+	// if (key === ' ' && useVideoFile) {
+	// 	if (videoPaused) {
+	// 		myVideoFile.play();
+	// 		videoPaused = false;
+	// 	} else {
+	// 		myVideoFile.pause();
+	// 		videoPaused = true;
+	// 	}
+	// 	return false; // Prevent default space behavior
+	// }
+	if (key === '`') {
 		soundOn = !soundOn;
 		myVideoFile.volume(soundOn ? 1 : 0);
 		console.log("Sound: " + (soundOn ? "ON" : "OFF"));
