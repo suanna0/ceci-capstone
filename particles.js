@@ -1,4 +1,4 @@
-// drawings.js - Drawing helper functions for sketch.js
+// particles.js - Drawing helper functions for sketch.js
 // Pose landmark indices:
 // 0: nose, 11/12: shoulders, 13/14: elbows, 15/16: wrists
 // 23/24: hips, 25/26: knees, 27/28: ankles
@@ -44,7 +44,13 @@ function drawQuadrangle() {
 // ---- Physics Circle Grid ----
 let particles = [];
 let particlesInitialized = false;
-let particleWord = "i";  // Default word
+let particleWord = "_";  // Default word (first lorem ipsum word)
+
+// Lorem ipsum word cycling
+let loremWords = "青見南用残売科位井並化見煮条。打意自大塾案率容化総約属型告権国聞陵英。感育姫況続販阜食無都面車善検覚性。深在同稿就称軽半報関学止止置者所。止力光波写作降幼渋転試北。情陽勢需報汽双民女度果主度表。面適前帯校算保気検周初欧直芸少下。注解時課万辞上連懲資軍目見妊。見禁連害難想型条液決笑達昭伏加。裁更正所税関会米美意聞想極。".split("");
+let loremIndex = 0;
+let lastWordChangeTime = 0;
+let wordChangeInterval = 500; // milliseconds
 
 // Call this from keyTyped() in sketch.js
 function handleParticleInput(k) {
@@ -69,20 +75,14 @@ function setParticleWord(word) {
 function initParticles(cols = 20, rows = 15, size = 8) {
   particles = [];
   let spacingX = width / (cols + 1);
-  let offset = - spacingX/ 2;
   let spacingY = height / (rows + 1);
 
   for (let i = 1; i <= cols; i++) {
     for (let j = 1; j <= rows; j++) {
-      if (j % 2 === 0) {
-        offset = 0;
-      } else {
-        offset = spacingX / 2;
-      }
       particles.push({
-        x: i * spacingX + offset,
+        x: i * spacingX,
         y: j * spacingY,
-        homeX: i * spacingX + offset,
+        homeX: i * spacingX,
         homeY: j * spacingY,
         vx: 0,
         vy: 0,
@@ -96,6 +96,13 @@ function initParticles(cols = 20, rows = 15, size = 8) {
 // Call in draw() to update and render particles
 function updateParticles() {
   if (!particlesInitialized) initParticles();
+
+  // Cycle through lorem ipsum words every 0.5 seconds
+  if (millis() - lastWordChangeTime >= wordChangeInterval) {
+    loremIndex = (loremIndex + 1) % loremWords.length;
+    particleWord = loremWords[loremIndex];
+    lastWordChangeTime = millis();
+  }
 
   // Get quadrangle points
   let p1 = getPosePoint(15); // left wrist
@@ -136,9 +143,15 @@ function drawParticles(r = 100, g = 150, b = 255, a = 200) {
   noStroke();
   fill(r, g, b, a);
   let word = particleWord || "_";
-  textSize(9);
+  textSize(12);
   for (let p of particles) {
-    text(word, p.x, p.y);
+    if (dist(p.x, p.y, p.homeX, p.homeY) > 5) {
+      text(word, p.x, p.y);
+      stroke(0, 0, 0, 200);
+      strokeWeight(1);
+      // line(p.x, p.y, p.homeX, p.homeY);
+      noStroke();
+    }
   }
 }
 

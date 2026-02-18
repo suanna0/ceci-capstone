@@ -74,7 +74,7 @@ function setup() {
 	myWebcam.size(windowHeight * 4/3, windowHeight);
 	myWebcam.hide();
 
-	myVideoFile = createVideo('assets/viviana_1.mov');
+	myVideoFile = createVideo('assets/evelyn_1.mp4');
 	myVideoFile.size(windowHeight * 4/3, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
@@ -134,16 +134,6 @@ function onVideoSourceChange() {
 let videoPaused = false;
 let soundOn = false;
 function keyPressed() {
-	// if (key === ' ' && useVideoFile) {
-	// 	if (videoPaused) {
-	// 		myVideoFile.play();
-	// 		videoPaused = false;
-	// 	} else {
-	// 		myVideoFile.pause();
-	// 		videoPaused = true;
-	// 	}
-	// 	return false; // Prevent default space behavior
-	// }
 	if (key === '`') {
 		soundOn = !soundOn;
 		myVideoFile.volume(soundOn ? 1 : 0);
@@ -151,12 +141,12 @@ function keyPressed() {
 		return false;
 	}
 	if (keyCode === UP_ARROW) {
-		particleCols+=10;
-		particleRows+=10;
+		particleCols+=5;
+		particleRows+=5;
 		initParticles(particleCols, particleRows, 8);
 	} else if (keyCode === DOWN_ARROW) {
-		particleCols-=10;
-		particleRows-=10;
+		particleCols-=5;
+		particleRows-=5;
 		initParticles(particleCols, particleRows, 8);
 	}
 	// Handle backspace for particle word
@@ -214,7 +204,7 @@ function draw() {
 	drawClownNose();
 	drawThumbPlum();
 	drawJawOpenness();
-	// drawChosenJoints();
+	drawChosenJoints();
 	// drawPoseCircle(1, 10, 255, 0, 0, 180);
 	// drawQuadrangle();
 	if (checkboxParticles.checked()) {
@@ -309,8 +299,8 @@ function drawJawOpenness(){
 
 
 function drawChosenJoints() {
-	var jointA = 12;
-	var jointB = 16;
+	var jointA = 29;
+	var jointB = 30;
 	if (trackingConfig.doAcquirePoseLandmarks) {
 		if (poseLandmarks && poseLandmarks.landmarks) {
 			const nPoses = poseLandmarks.landmarks.length;
