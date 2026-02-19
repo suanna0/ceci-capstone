@@ -1,7 +1,5 @@
 # GUI for Ceci Sun's Senior Capstone Performance 
-[![Demo Video](https://img.youtube.com/vi/3_EyuqmPKQU/maxresdefault.jpg)]
-(https://www.youtube.com/watch?v=3_EyuqmPKQU)
-
+[Demo Video](https://www.youtube.com/watch?v=3_EyuqmPKQU)
 
 **Note to self:** `% node osc-bridge.js` & CHOP > OSC In > Network Port: 7000
 
