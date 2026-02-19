@@ -16,7 +16,7 @@ let handLandmarks;
 let poseLandmarks;
 let faceLandmarks;
 let myCapture;
-let frameRateAvg = 30.0;
+let frameRateAvg = 60.0;
 
 //----------------------------------------------------
 // For landmarks you want, set to true; set false the ones you don't.
@@ -395,12 +395,11 @@ function drawDiagnosticInfo() {
 	text("fps: " + nf(frameRateAvg,1,2), diagX, diagY);
 
 	// Show OSC bridge connection status
+	fill("black");
 	if (wsConnected) {
-		fill(0, 200, 0);
-		text("osc: connected", diagX, diagY + 15);
+		text("osc: ✓", diagX, diagY + 15);
 	} else {
-		fill(200, 0, 0);
-		text("osc: disconnected", diagX, diagY + 15);
+		text("osc: ✗", diagX, diagY + 15);
 	}
 
 	// Slider labels (positioned next to sliders)
@@ -455,9 +454,8 @@ function drawTimeGraph() {
 	push();
 
 	// Semi-transparent background
-	fill(255, 255, 255, 200);
-	stroke(100);
-	strokeWeight(1);
+	fill(255, 255, 255, 100);
+	strokeWeight(0);
 	rect(graphX, graphY, graphWidth, graphHeight, 5);
 
 	// Draw grid lines
@@ -491,12 +489,12 @@ function drawTimeGraph() {
 
 	// Draw current time playhead
 	let playheadX = graphX + (currentTime / duration) * graphWidth;
-	stroke(255, 0, 0);
-	strokeWeight(2);
+	stroke(255);
+	strokeWeight(1);
 	line(playheadX, graphY, playheadX, graphY + graphHeight);
 
 	// Draw current value dot
-	fill(255, 0, 0);
+	fill(255);
 	noStroke();
 	let dotY = graphY + graphHeight - (smoothedValue * graphHeight);
 	circle(playheadX, dotY, 8);
@@ -507,11 +505,10 @@ function drawTimeGraph() {
 	textFont('monospace');
 	textSize(12);
 	textAlign(LEFT, TOP);
-	text("osc signal over time", graphX + 5, graphY + 5);
+	text("signal vs. time", graphX + 5, graphY + 5);
 
 	// Time labels
 	textAlign(CENTER, TOP);
-	text("0s", graphX, graphY + graphHeight + 3);
 	text(nf(duration, 1, 1) + "s", graphX + graphWidth, graphY + graphHeight + 3);
 	text(nf(currentTime, 1, 1) + "s", playheadX, graphY + graphHeight + 3);
 
