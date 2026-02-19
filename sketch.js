@@ -39,12 +39,24 @@ let checkboxPose;
 let checkboxVideoFile;
 let checkboxFullVideo;
 let checkboxParticles;
+let sliderMinDistance;
 let sliderMaxDistance;
 let sliderSmoothing;
 let smoothedValue = 0; // For exponential smoothing of OSC signal
 
+// Time graph for OSC signal
+let signalHistory = []; // Array of {time, value} objects
+let graphWidth = 400;
+let graphHeight = 100;
+let sliderX = 30;
+let graphX; // Will be set in setup()
+let graphY; // Will be set in setup() based on canvas height
+
 let particleCols = 30;
 let particleRows = 30;
+
+let jointA = 29;
+let jointB = 30;
 
 //----------------------------------------------------
 // Video input sources
@@ -66,7 +78,6 @@ async function preload() {
 //------------------------------------------
 function setup() {
 
-	// 640 * 480 ratio is 4:3
   createCanvas(windowHeight * 4/3, windowHeight);
 
 	// Create webcam capture
@@ -75,7 +86,7 @@ function setup() {
 	myWebcam.hide();
 
 	myVideoFile = createVideo('assets/evelyn_1.mp4');
-	myVideoFile.size(windowHeight * 4/3, windowHeight);
+	myVideoFile.size(windowHeight * 16/9, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
 	myVideoFile.volume(0);
@@ -93,19 +104,19 @@ function setup() {
 	checkboxVideoFile = createCheckbox('use video file', false);
 	checkboxVideoFile.position(0, 80);
 	checkboxVideoFile.changed(onVideoSourceChange);
-	checkboxFullVideo = createCheckbox('full video', false);
+	checkboxFullVideo = createCheckbox('full video', true);
 	checkboxFullVideo.position(0, 100);
-	checkboxParticles = createCheckbox('particles', true);
+	checkboxParticles = createCheckbox('particles', false);
 	checkboxParticles.position(0, 120);
 
-	// Slider for maxDistance (0.1 to 1.0, default 0.5)
+	// Sliders - positions will be set after graphY is calculated
+	sliderMinDistance = createSlider(0, 0.5, 0.05, 0.01);
+	sliderMinDistance.style('width', '100px');
+
 	sliderMaxDistance = createSlider(0.1, 1.0, 0.5, 0.01);
-	sliderMaxDistance.position(0, 145);
 	sliderMaxDistance.style('width', '100px');
 
-	// Slider for smoothing (0 = no smoothing, 0.99 = heavy smoothing)
 	sliderSmoothing = createSlider(0, 0.99, 0.5, 0.01);
-	sliderSmoothing.position(0, 185);
 	sliderSmoothing.style('width', '100px');
 
 	// Initialize connection to OSC bridge
@@ -113,21 +124,40 @@ function setup() {
 
 	initParticles(30, 30, 8);
 	frameRate(frameRateAvg);
+
+	// Set graph and slider positions at bottom left (side by side)
+	graphY = height - graphHeight - 20;
+	graphX = sliderX + 240; // Graph to the right of sliders
+
+	// Position sliders next to the graph
+	positionSliders();
+}
+
+function positionSliders() {
+	let sliderStartY = graphY + 10;
+	sliderMinDistance.position(sliderX, sliderStartY);
+	sliderMaxDistance.position(sliderX, sliderStartY + 35);
+	sliderSmoothing.position(sliderX, sliderStartY + 70);
 }
 
 //------------------------------------------
 function onVideoSourceChange() {
 	useVideoFile = checkboxVideoFile.checked();
 	if (useVideoFile) {
-		resizeCanvas(windowHeight * 4/3, windowHeight);
+		resizeCanvas(windowHeight * 16/9, windowHeight);
 		myCapture = myVideoFile;
 		myVideoFile.play();
+		// Clear signal history when switching to video
+		signalHistory = [];
 	} else {
-		// Switch to webcam with 4:3 aspect ratio
 		resizeCanvas(windowHeight * 4/3, windowHeight);
 		myCapture = myWebcam;
 		myVideoFile.pause();
 	}
+	// Update graph and slider positions
+	graphY = height - graphHeight - 20;
+	graphX = sliderX + 240;
+	positionSliders();
 }
 
 //------------------------------------------
@@ -214,6 +244,10 @@ function draw() {
 
 	drawDiagnosticInfo();
 
+	// Update and draw time graph for OSC signal
+	updateSignalHistory();
+	drawTimeGraph();
+
 	// Send pose landmarks via OSC to TouchDesigner
 	sendPoseData();
 }
@@ -299,8 +333,6 @@ function drawJawOpenness(){
 
 
 function drawChosenJoints() {
-	var jointA = 29;
-	var jointB = 30;
 	if (trackingConfig.doAcquirePoseLandmarks) {
 		if (poseLandmarks && poseLandmarks.landmarks) {
 			const nPoses = poseLandmarks.landmarks.length;
@@ -353,22 +385,143 @@ function drawVideoBackground() {
 function drawDiagnosticInfo() {
   noStroke();
   fill("black");
+  textFont('monospace');
   textSize(12);
 	frameRateAvg = 0.98*frameRateAvg + 0.02*frameRate();
-  text("FPS: " + nf(frameRateAvg,1,2), 40, 30);
+
+	// Position diagnostic info above sliders
+	let diagX = sliderX;
+	let diagY = graphY - 25;
+	text("fps: " + nf(frameRateAvg,1,2), diagX, diagY);
 
 	// Show OSC bridge connection status
 	if (wsConnected) {
 		fill(0, 200, 0);
-		text("OSC: Connected", 40, 45);
+		text("osc: connected", diagX, diagY + 15);
 	} else {
 		fill(200, 0, 0);
-		text("OSC: Disconnected", 40, 45);
+		text("osc: disconnected", diagX, diagY + 15);
 	}
 
+	// Slider labels (positioned next to sliders)
 	fill("black");
-	text("sensitivity: " + nf(sliderMaxDistance.value(), 1, 2), 20, 180);
-	text("smoothing: " + nf(sliderSmoothing.value(), 1, 2), 20, 220);
+	let labelX = sliderX + 105;
+	let sliderStartY = graphY + 10;
+	text("min: " + nf(sliderMinDistance.value(), 1, 2), labelX, sliderStartY + 12);
+	text("max: " + nf(sliderMaxDistance.value(), 1, 2), labelX, sliderStartY + 47);
+	text("smooth: " + nf(sliderSmoothing.value(), 1, 2), labelX, sliderStartY + 82);
+}
+
+
+//------------------------------------------
+// Record and draw OSC signal time graph
+function updateSignalHistory() {
+	if (!useVideoFile) return; // Only record when using video file
+
+	let currentTime = myVideoFile.time();
+	let duration = myVideoFile.duration();
+
+	if (duration > 0 && currentTime >= 0) {
+		// Add current value to history
+		signalHistory.push({
+			time: currentTime,
+			value: smoothedValue
+		});
+
+		// Remove old entries if video looped (time went backwards)
+		if (signalHistory.length > 1) {
+			let lastTime = signalHistory[signalHistory.length - 2].time;
+			if (currentTime < lastTime - 1) {
+				// Video looped, clear history
+				signalHistory = [{time: currentTime, value: smoothedValue}];
+			}
+		}
+
+		// Limit history size to prevent memory issues
+		if (signalHistory.length > 10000) {
+			signalHistory.shift();
+		}
+	}
+}
+
+function drawTimeGraph() {
+	if (!useVideoFile) return; // Only show when using video file
+
+	let duration = myVideoFile.duration();
+	let currentTime = myVideoFile.time();
+
+	if (duration <= 0) return;
+
+	push();
+
+	// Semi-transparent background
+	fill(255, 255, 255, 200);
+	stroke(100);
+	strokeWeight(1);
+	rect(graphX, graphY, graphWidth, graphHeight, 5);
+
+	// Draw grid lines
+	stroke(220);
+	strokeWeight(0.5);
+	// Horizontal grid (signal levels)
+	for (let i = 0; i <= 4; i++) {
+		let y = graphY + (i / 4) * graphHeight;
+		line(graphX, y, graphX + graphWidth, y);
+	}
+	// Vertical grid (time markers)
+	let timeStep = duration > 60 ? 10 : (duration > 30 ? 5 : 2); // seconds between markers
+	for (let t = 0; t <= duration; t += timeStep) {
+		let x = graphX + (t / duration) * graphWidth;
+		line(x, graphY, x, graphY + graphHeight);
+	}
+
+	// Draw signal history as a line
+	if (signalHistory.length > 1) {
+		stroke(0, 150, 100);
+		strokeWeight(1.5);
+		noFill();
+		beginShape();
+		for (let i = 0; i < signalHistory.length; i++) {
+			let x = graphX + (signalHistory[i].time / duration) * graphWidth;
+			let y = graphY + graphHeight - (signalHistory[i].value * graphHeight);
+			vertex(x, y);
+		}
+		endShape();
+	}
+
+	// Draw current time playhead
+	let playheadX = graphX + (currentTime / duration) * graphWidth;
+	stroke(255, 0, 0);
+	strokeWeight(2);
+	line(playheadX, graphY, playheadX, graphY + graphHeight);
+
+	// Draw current value dot
+	fill(255, 0, 0);
+	noStroke();
+	let dotY = graphY + graphHeight - (smoothedValue * graphHeight);
+	circle(playheadX, dotY, 8);
+
+	// Labels
+	fill(0);
+	noStroke();
+	textFont('monospace');
+	textSize(12);
+	textAlign(LEFT, TOP);
+	text("osc signal over time", graphX + 5, graphY + 5);
+
+	// Time labels
+	textAlign(CENTER, TOP);
+	text("0s", graphX, graphY + graphHeight + 3);
+	text(nf(duration, 1, 1) + "s", graphX + graphWidth, graphY + graphHeight + 3);
+	text(nf(currentTime, 1, 1) + "s", playheadX, graphY + graphHeight + 3);
+
+	// Value scale labels
+	textAlign(RIGHT, CENTER);
+	text("1.0", graphX - 3, graphY);
+	text("0.5", graphX - 3, graphY + graphHeight / 2);
+	text("0.0", graphX - 3, graphY + graphHeight);
+
+	pop();
 }
 
 function getPoseDistance(a, b) {
@@ -387,12 +540,14 @@ function getPoseDistance(a, b) {
 function sendPoseData() {
 	if (!wsConnected || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-	const distance = getPoseDistance(12, 16);
+	const distance = getPoseDistance(jointA, jointB);
 	if (distance === null) return;
 
-	// Normalize to 0-1 range using slider value
+	// Normalize to 0-1 range using min/max slider values
+	let minDistance = sliderMinDistance.value();
 	let maxDistance = sliderMaxDistance.value();
-	let normalized = constrain(distance / maxDistance, 0, 1);
+	let normalized = map(distance, minDistance, maxDistance, 0, 1);
+	normalized = constrain(normalized, 0, 1);
 
 	// Apply exponential smoothing (low-pass filter)
 	// Higher smoothing value = smoother but more latency
