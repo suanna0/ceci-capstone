@@ -39,6 +39,7 @@ let checkboxPose;
 let checkboxVideoFile;
 let checkboxFullVideo;
 let checkboxParticles;
+let checkboxSnow;
 let sliderMinDistance;
 let sliderMaxDistance;
 let sliderSmoothing;
@@ -78,14 +79,14 @@ async function preload() {
 //------------------------------------------
 function setup() {
 
-  createCanvas(windowHeight * 4/3, windowHeight);
+  createCanvas(windowHeight * 4/3, windowHeight, WEBGL);
 
 	// Create webcam capture
 	myWebcam = createCapture(VIDEO);
 	myWebcam.size(windowHeight * 4/3, windowHeight);
 	myWebcam.hide();
 
-	myVideoFile = createVideo('assets/evelyn_1.mp4');
+	myVideoFile = createVideo('assets/viviana.mov');
 	myVideoFile.size(windowHeight * 16/9, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
@@ -108,6 +109,8 @@ function setup() {
 	checkboxFullVideo.position(0, 100);
 	checkboxParticles = createCheckbox('particles', false);
 	checkboxParticles.position(0, 120);
+	checkboxSnow = createCheckbox('snow', false);
+	checkboxSnow.position(0, 140);
 
 	// Sliders - positions will be set after graphY is calculated
 	sliderMinDistance = createSlider(0, 0.5, 0.05, 0.01);
@@ -123,6 +126,7 @@ function setup() {
 	setupWebSocket();
 
 	initParticles(30, 30, 8);
+	initSnow(10000);
 	frameRate(frameRateAvg);
 
 	// Set graph and slider positions at bottom left (side by side)
@@ -144,13 +148,13 @@ function positionSliders() {
 function onVideoSourceChange() {
 	useVideoFile = checkboxVideoFile.checked();
 	if (useVideoFile) {
-		resizeCanvas(windowHeight * 16/9, windowHeight);
+		resizeCanvas(windowHeight * 16/9, windowHeight, WEBGL);
 		myCapture = myVideoFile;
 		myVideoFile.play();
 		// Clear signal history when switching to video
 		signalHistory = [];
 	} else {
-		resizeCanvas(windowHeight * 4/3, windowHeight);
+		resizeCanvas(windowHeight * 4/3, windowHeight, WEBGL);
 		myCapture = myWebcam;
 		myVideoFile.pause();
 	}
@@ -158,6 +162,9 @@ function onVideoSourceChange() {
 	graphY = height - graphHeight - 20;
 	graphX = sliderX + 240;
 	positionSliders();
+
+	// Reinitialize snow shader after canvas resize
+	initSnow(10000);
 }
 
 //------------------------------------------
@@ -215,9 +222,54 @@ function setupWebSocket() {
 
 
 //------------------------------------------
+let wristDetected = false; // For debugging
+
 function draw() {
-  background("white");
-// background(255, 255, 255, 4);
+  // Update snow control position from right wrist (joint #16)
+  wristDetected = false;
+  if (poseLandmarks && poseLandmarks.landmarks && poseLandmarks.landmarks.length > 0) {
+    let pose = poseLandmarks.landmarks[0];
+    let wrist = pose[16]; // Right wrist
+    if (wrist) {
+      // Map from normalized (0-1) to WEBGL coords (mirrored for video)
+      let wx = map(wrist.x, 0, 1, width/2, -width/2);
+      let wy = map(wrist.y, 0, 1, -height/2, height/2);
+      setSnowControlPosition(wx, wy);
+      wristDetected = true;
+    }
+  }
+
+  // Debug: log pose status every 60 frames
+  if (frameCount % 60 === 0) {
+    if (!poseLandmarks) {
+      console.log("poseLandmarks is null/undefined");
+    } else if (!poseLandmarks.landmarks) {
+      console.log("poseLandmarks.landmarks is null/undefined");
+    } else if (poseLandmarks.landmarks.length === 0) {
+      console.log("poseLandmarks.landmarks is empty - no pose detected");
+    } else {
+      console.log("Pose detected! Wrist:", poseLandmarks.landmarks[0][16]);
+    }
+  }
+
+  // Fallback to mouse if no wrist detected
+  if (!wristDetected) {
+    let mx = mouseX - width/2;
+    let my = mouseY - height/2;
+    setSnowControlPosition(mx, my);
+  }
+
+  // Draw snow first (uses WEBGL coordinates with origin at center)
+  if (checkboxSnow.checked()) {
+    drawSnow();
+  } else {
+    background("white");
+  }
+
+  // Translate to top-left corner for 2D-style drawing
+  push();
+  translate(-width/2, -height/2);
+
   drawVideoBackground();
 	
 	trackingConfig.doAcquireHandLandmarks = checkboxHand.checked();
@@ -250,6 +302,8 @@ function draw() {
 
 	// Send pose landmarks via OSC to TouchDesigner
 	sendPoseData();
+
+	pop(); // End 2D-style coordinate system
 }
 
 //------------------------------------------
@@ -400,6 +454,13 @@ function drawDiagnosticInfo() {
 		text("osc: ✓", diagX, diagY + 15);
 	} else {
 		text("osc: ✗", diagX, diagY + 15);
+	}
+
+	// Show wrist detection status for snow control
+	if (wristDetected) {
+		text("wrist: ✓", diagX + 60, diagY + 15);
+	} else {
+		text("wrist: ✗ (using mouse)", diagX + 60, diagY + 15);
 	}
 
 	// Slider labels (positioned next to sliders)
