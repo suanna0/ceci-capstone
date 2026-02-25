@@ -48,7 +48,7 @@ void main() {
 
 // Snow configuration
 let snowConfig = {
-  numParticles: 10000,
+  numParticles: 20000,
   gravity: 1,
   size: 0.85,
   repelRadius: 30,
@@ -160,7 +160,7 @@ class SnowParticle {
 }
 
 // Initialize snow system - call this from setup()
-function initSnow(numParticles = 10000) {
+function initSnow(numParticles = 20000) {
   snowConfig.numParticles = numParticles;
   snowShader = createShader(snowVertShader, snowFragShader);
 
@@ -173,6 +173,30 @@ function initSnow(numParticles = 10000) {
 // Update snow configuration
 function setSnowConfig(config) {
   Object.assign(snowConfig, config);
+}
+
+// Initialize slider controls
+function initSnowControls() {
+  const sliders = [
+    { id: 'gravity', key: 'gravity', valId: 'gravity-val' },
+    { id: 'size', key: 'size', valId: 'size-val' },
+    { id: 'repel', key: 'repelRadius', valId: 'repel-val' },
+    { id: 'attraction', key: 'attraction', valId: 'attraction-val' },
+    { id: 'trail', key: 'trailAlpha', valId: 'trail-val' },
+    { id: 'turbulence', key: 'turbulence', valId: 'turbulence-val' }
+  ];
+
+  sliders.forEach(({ id, key, valId }) => {
+    const slider = document.getElementById(id);
+    const valSpan = document.getElementById(valId);
+    if (slider && valSpan) {
+      slider.addEventListener('input', () => {
+        const val = parseFloat(slider.value);
+        snowConfig[key] = val;
+        valSpan.textContent = val;
+      });
+    }
+  });
 }
 
 // Draw snow - call this from draw()

@@ -46,11 +46,18 @@ let particles = [];
 let particlesInitialized = false;
 let particleWord = "_";  // Default word (first lorem ipsum word)
 
+// Particle configuration
+let particleConfig = {
+  wordChangeInterval: 500,
+  pushForce: 20,
+  homeForce: 0.0015,
+  damping: 0.8
+};
+
 // Lorem ipsum word cycling
 let loremWords = "青見南用残売科位井並化見煮条。打意自大塾案率容化総約属型告権国聞陵英。感育姫況続販阜食無都面車善検覚性。深在同稿就称軽半報関学止止置者所。止力光波写作降幼渋転試北。情陽勢需報汽双民女度果主度表。面適前帯校算保気検周初欧直芸少下。注解時課万辞上連懲資軍目見妊。見禁連害難想型条液決笑達昭伏加。裁更正所税関会米美意聞想極。".split("");
 let loremIndex = 0;
 let lastWordChangeTime = 0;
-let wordChangeInterval = 500; // milliseconds
 
 // Call this from keyTyped() in sketch.js
 function handleParticleInput(k) {
@@ -97,8 +104,8 @@ function initParticles(cols = 20, rows = 15, size = 8) {
 function updateParticles() {
   if (!particlesInitialized) initParticles();
 
-  // Cycle through lorem ipsum words every 0.5 seconds
-  if (millis() - lastWordChangeTime >= wordChangeInterval) {
+  // Cycle through lorem ipsum words
+  if (millis() - lastWordChangeTime >= particleConfig.wordChangeInterval) {
     loremIndex = (loremIndex + 1) % loremWords.length;
     particleWord = loremWords[loremIndex];
     lastWordChangeTime = millis();
@@ -120,37 +127,36 @@ function updateParticles() {
       let cy = (p1.y + p2.y + p3.y + p4.y) / 4;
       let dx = p.x - cx;
       let dy = p.y - cy;
-      let dist = sqrt(dx * dx + dy * dy) || 1;
-      let force = 20;
-      p.vx += (dx / dist) * force;
-      p.vy += (dy / dist) * force;
+      let d = sqrt(dx * dx + dy * dy) || 1;
+      p.vx += (dx / d) * particleConfig.pushForce;
+      p.vy += (dy / d) * particleConfig.pushForce;
     }
 
     // Slowly return home
-    let homeForce = 0.0015;
-    p.vx += (p.homeX - p.x) * homeForce;
-    p.vy += (p.homeY - p.y) * homeForce;
+    p.vx += (p.homeX - p.x) * particleConfig.homeForce;
+    p.vy += (p.homeY - p.y) * particleConfig.homeForce;
 
     // Apply velocity with damping
     p.x += p.vx;
     p.y += p.vy;
-    p.vx *= 0.8;
-    p.vy *= 0.8;
+    p.vx *= particleConfig.damping;
+    p.vy *= particleConfig.damping;
   }
 }
 
 function drawParticles(r = 100, g = 150, b = 255, a = 200) {
   noStroke();
-  fill(r, g, b, a);
   let word = particleWord || "_";
-  textSize(12);
+  if (particleFont) {
+    textFont(particleFont);
+  }
+  textSize(14);
+  textAlign(CENTER, CENTER);
   for (let p of particles) {
-    if (dist(p.x, p.y, p.homeX, p.homeY) > 5) {
-      text(word, p.x, p.y);
-      stroke(0, 0, 0, 200);
-      strokeWeight(1);
-      // line(p.x, p.y, p.homeX, p.homeY);
-      noStroke();
+    let d = dist(p.x, p.y, p.homeX, p.homeY);
+    if (d > 5) {
+      fill(r, g, b, alpha);
+    text(word, p.x, p.y)
     }
   }
 }
@@ -171,4 +177,26 @@ function pointInTriangle(px, py, a, b, c) {
 
 function sign(px, py, x1, y1, x2, y2) {
   return (px - x2) * (y1 - y2) - (x1 - x2) * (py - y2);
+}
+
+// Initialize slider controls for particles
+function initParticleControls() {
+  const sliders = [
+    { id: 'interval', key: 'wordChangeInterval', valId: 'interval-val' },
+    { id: 'push', key: 'pushForce', valId: 'push-val' },
+    { id: 'home', key: 'homeForce', valId: 'home-val' },
+    { id: 'damping', key: 'damping', valId: 'damping-val' }
+  ];
+
+  sliders.forEach(({ id, key, valId }) => {
+    const slider = document.getElementById(id);
+    const valSpan = document.getElementById(valId);
+    if (slider && valSpan) {
+      slider.addEventListener('input', () => {
+        const val = parseFloat(slider.value);
+        particleConfig[key] = val;
+        valSpan.textContent = val;
+      });
+    }
+  });
 }

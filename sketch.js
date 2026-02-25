@@ -71,9 +71,13 @@ let ws;
 let wsConnected = false;
 const WS_URL = "ws://localhost:9980"; // OSC bridge WebSocket port
 
+let particleFont;
+
 //------------------------------------------
 async function preload() {
 	preloadTracker();
+	// Load font for WEBGL text rendering (supports Chinese characters)
+	particleFont = loadFont('https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-sc@latest/chinese-simplified-400-normal.ttf');
 }
 
 //------------------------------------------
@@ -109,8 +113,10 @@ function setup() {
 	checkboxFullVideo.position(0, 100);
 	checkboxParticles = createCheckbox('particles', false);
 	checkboxParticles.position(0, 120);
+	checkboxParticles.changed(onParticlesToggle);
 	checkboxSnow = createCheckbox('snow', false);
 	checkboxSnow.position(0, 140);
+	checkboxSnow.changed(onSnowToggle);
 
 	// Sliders - positions will be set after graphY is calculated
 	sliderMinDistance = createSlider(0, 0.5, 0.05, 0.01);
@@ -126,8 +132,14 @@ function setup() {
 	setupWebSocket();
 
 	initParticles(30, 30, 8);
+	initParticleControls();
 	initSnow(10000);
+	initSnowControls();
 	frameRate(frameRateAvg);
+
+	// Hide control panels initially (checkboxes start unchecked)
+	document.getElementById('snow-controls').style.display = 'none';
+	document.getElementById('particle-controls').style.display = 'none';
 
 	// Set graph and slider positions at bottom left (side by side)
 	graphY = height - graphHeight - 20;
@@ -142,6 +154,18 @@ function positionSliders() {
 	sliderMinDistance.position(sliderX, sliderStartY);
 	sliderMaxDistance.position(sliderX, sliderStartY + 35);
 	sliderSmoothing.position(sliderX, sliderStartY + 70);
+}
+
+//------------------------------------------
+function onSnowToggle() {
+	const panel = document.getElementById('snow-controls');
+	panel.style.display = checkboxSnow.checked() ? 'block' : 'none';
+}
+
+//------------------------------------------
+function onParticlesToggle() {
+	const panel = document.getElementById('particle-controls');
+	panel.style.display = checkboxParticles.checked() ? 'block' : 'none';
 }
 
 //------------------------------------------
@@ -283,10 +307,10 @@ function draw() {
 //   drawFaceMetrics();
 	
 	// Example "applications"; for code, see below:
-	drawClownNose();
-	drawThumbPlum();
-	drawJawOpenness();
-	drawChosenJoints();
+	// drawClownNose();
+	// drawThumbPlum();
+	// drawJawOpenness();
+	// drawChosenJoints();
 	// drawPoseCircle(1, 10, 255, 0, 0, 180);
 	// drawQuadrangle();
 	if (checkboxParticles.checked()) {
