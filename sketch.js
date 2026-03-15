@@ -90,7 +90,7 @@ function setup() {
 	myWebcam.size(windowHeight * 4/3, windowHeight);
 	myWebcam.hide();
 
-	myVideoFile = createVideo('assets/viviana.mov');
+	myVideoFile = createVideo('assets/viviana_2.mov');
 	myVideoFile.size(windowHeight * 16/9, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
@@ -312,7 +312,7 @@ function draw() {
 	// drawJawOpenness();
 	// drawChosenJoints();
 	// drawPoseCircle(1, 10, 255, 0, 0, 180);
-	// drawQuadrangle();
+	drawQuadrangle();
 	if (checkboxParticles.checked()) {
 		updateParticles();
 		drawParticles(0, 0, 0, 255);
