@@ -154,12 +154,10 @@ function drawParticles(r = 100, g = 150, b = 255, a = 200) {
   textAlign(CENTER, CENTER);
   for (let p of particles) {
     let d = dist(p.x, p.y, p.homeX, p.homeY);
-    // if (d > 5) {
-    //   fill(r, g, b, alpha);
-    //   text(word, p.x, p.y)
-    // }
-    // stroke(r, g, b, a);
-    circle(p.x, p.y, 5);
+    if (d > 5) {
+      fill(r, g, b, alpha);
+      text(word, p.x, p.y)
+    }
   }
 }
 

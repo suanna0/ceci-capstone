@@ -193,12 +193,29 @@ function onVideoSourceChange() {
 
 //------------------------------------------
 let videoPaused = false;
+let mediapipePaused = false;
+let overlayMessage = '';
+let overlayStartTime = -9999;
 let soundOn = false;
 function keyPressed() {
 	if (key === '`') {
 		soundOn = !soundOn;
 		myVideoFile.volume(soundOn ? 1 : 0);
 		console.log("Sound: " + (soundOn ? "ON" : "OFF"));
+		return false;
+	}
+	if (key === 'p') {
+		mediapipePaused = true;
+		if (useVideoFile) myVideoFile.pause();
+		overlayMessage = "pressed 'p'";
+		overlayStartTime = millis();
+		return false;
+	}
+	if (key === 'c') {
+		mediapipePaused = false;
+		if (useVideoFile) myVideoFile.play();
+		overlayMessage = "pressed 'c'";
+		overlayStartTime = millis();
 		return false;
 	}
 	if (keyCode === UP_ARROW) {
@@ -312,12 +329,12 @@ function draw() {
 	// drawJawOpenness();
 	// drawChosenJoints();
 	// drawPoseCircle(1, 10, 255, 0, 0, 180);
-	drawQuadrangle();
 	if (checkboxParticles.checked()) {
 		updateParticles();
 		drawParticles(0, 0, 0, 255);
 	}
 
+	drawOverlay();
 	drawDiagnosticInfo();
 
 	// Update and draw time graph for OSC signal
@@ -604,6 +621,19 @@ function drawTimeGraph() {
 	text("0.0", graphX - 3, graphY + graphHeight);
 
 	pop();
+}
+
+function drawOverlay() {
+	let duration = 1500; // ms to show the message
+	let elapsed = millis() - overlayStartTime;
+	if (elapsed > duration) return;
+	let alpha = map(elapsed, 0, duration, 255, 0);
+	noStroke();
+	fill(255, 255, 255, alpha);
+	textFont('Helvetica');
+	textSize(30);
+	textAlign(CENTER, CENTER);
+	text(overlayMessage, width / 2, height / 2);
 }
 
 function getPoseDistance(a, b) {

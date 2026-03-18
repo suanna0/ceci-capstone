@@ -104,7 +104,7 @@ async function predictWebcam() {
 
   const startTimeMs = performance.now();
 
-  if (lastVideoTime !== myCapture.elt.currentTime) {
+  if (!mediapipePaused && lastVideoTime !== myCapture.elt.currentTime) {
     const src = myCapture.elt;
 
     // Run the three Tasks in a "holistic" pass
