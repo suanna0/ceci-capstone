@@ -90,7 +90,7 @@ function setup() {
 	myWebcam.size(windowHeight * 4/3, windowHeight);
 	myWebcam.hide();
 
-	myVideoFile = createVideo('assets/viviana_2.mov');
+	myVideoFile = createVideo('assets/viviana_322.mov');
 	myVideoFile.size(windowHeight * 16/9, windowHeight);
 	myVideoFile.hide();
 	myVideoFile.loop();
@@ -197,7 +197,37 @@ let mediapipePaused = false;
 let overlayMessage = '';
 let overlayStartTime = -9999;
 let soundOn = false;
+let controlPanelVisible = true;
+
+function toggleControlPanel() {
+	controlPanelVisible = !controlPanelVisible;
+	const fn = controlPanelVisible ? 'show' : 'hide';
+	checkboxHand[fn]();
+	checkboxFace[fn]();
+	checkboxPose[fn]();
+	checkboxVideoFile[fn]();
+	checkboxFullVideo[fn]();
+	checkboxParticles[fn]();
+	checkboxSnow[fn]();
+	sliderMinDistance[fn]();
+	sliderMaxDistance[fn]();
+	sliderSmoothing[fn]();
+	const displayVal = controlPanelVisible ? '' : 'none';
+	if (controlPanelVisible) {
+		// Restore sub-panels only if their checkboxes are checked
+		document.getElementById('snow-controls').style.display = checkboxSnow.checked() ? 'block' : 'none';
+		document.getElementById('particle-controls').style.display = checkboxParticles.checked() ? 'block' : 'none';
+	} else {
+		document.getElementById('snow-controls').style.display = 'none';
+		document.getElementById('particle-controls').style.display = 'none';
+	}
+}
+
 function keyPressed() {
+	if (key === 'h') {
+		toggleControlPanel();
+		return false;
+	}
 	if (key === '`') {
 		soundOn = !soundOn;
 		myVideoFile.volume(soundOn ? 1 : 0);
@@ -236,6 +266,7 @@ function keyPressed() {
 
 //------------------------------------------
 function keyTyped() {
+	if (key === 'h') return false;
 	handleParticleInput(key);
 	return false;
 }
@@ -339,7 +370,7 @@ function draw() {
 
 	// Update and draw time graph for OSC signal
 	updateSignalHistory();
-	drawTimeGraph();
+	if (controlPanelVisible) drawTimeGraph();
 
 	// Send pose landmarks via OSC to TouchDesigner
 	sendPoseData();
