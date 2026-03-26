@@ -211,17 +211,18 @@ function drawHandPoints() {
         }
 				
 				// Draw the name of the hand
-				noStroke(); 
+				noStroke();
 				fill('black');
-				textSize(12); 
+				textSize(12);
 				for (let h = 0; h < nHands; h++) {
-					let whichHandStr = handLandmarks.handednesses[h]; 
+					let whichHandStr = handLandmarks.handednesses[h];
 					let px = handLandmarks.landmarks[h][0].x;
 					let py = handLandmarks.landmarks[h][0].y;
 					px = map(px, 0, 1, width, 0);
           py = map(py, 0, 1, 0, height);
-					text(whichHandStr, px,py+20); 
+					text(whichHandStr, px,py+20);
 				}
+
       }
     }
   }
@@ -243,6 +244,19 @@ function drawPosePoints(){
         for (let h = 0; h < nPoses; h++) {
           let joints = poseLandmarks.landmarks[h];
           drawConnectors(joints, PoseLandmarker.POSE_CONNECTIONS);
+        }
+
+        // Debug: draw 100px circle around each wrist (landmarks 15=left, 16=right)
+        noFill();
+        stroke(0, 255, 0);
+        strokeWeight(2.0);
+        for (let h = 0; h < nPoses; h++) {
+          let joints = poseLandmarks.landmarks[h];
+          for (let wi of [15, 16]) {
+            let px = map(joints[wi].x, 0, 1, width, 0);
+            let py = map(joints[wi].y, 0, 1, 0, height);
+            circle(px, py, 20); 
+          }
         }
       }
     }

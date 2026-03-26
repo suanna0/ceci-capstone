@@ -93,7 +93,9 @@ function initParticles(cols = 20, rows = 15, size = 8) {
         homeY: j * spacingY,
         vx: 0,
         vy: 0,
-        size: size
+        size: size,
+        angle: 0,
+        vAngle: 0
       });
     }
   }
@@ -130,17 +132,24 @@ function updateParticles() {
       let d = sqrt(dx * dx + dy * dy) || 1;
       p.vx += (dx / d) * particleConfig.pushForce;
       p.vy += (dy / d) * particleConfig.pushForce;
+      // Spin on disruption
+      p.vAngle += (random(-1, 1)) * 0.1;
     }
 
     // Slowly return home
     p.vx += (p.homeX - p.x) * particleConfig.homeForce;
     p.vy += (p.homeY - p.y) * particleConfig.homeForce;
 
+    // Rotate back toward 0 as particle settles
+    p.vAngle += -p.angle * 0.01;
+
     // Apply velocity with damping
     p.x += p.vx;
     p.y += p.vy;
     p.vx *= particleConfig.damping;
     p.vy *= particleConfig.damping;
+    p.angle += p.vAngle;
+    p.vAngle *= particleConfig.damping;
   }
 }
 
@@ -150,13 +159,17 @@ function drawParticles(r = 100, g = 150, b = 255, a = 200) {
   if (particleFont) {
     textFont(particleFont);
   }
-  textSize(14);
+  textSize(20);
   textAlign(CENTER, CENTER);
   for (let p of particles) {
     let d = dist(p.x, p.y, p.homeX, p.homeY);
     if (d > 5) {
       fill(r, g, b, alpha);
-      text(word, p.x, p.y)
+      push();
+      translate(p.x, p.y);
+      rotate(p.angle);
+      text(word, 0, 0);
+      pop();
     }
   }
 }
